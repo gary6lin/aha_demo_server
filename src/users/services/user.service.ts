@@ -1,25 +1,22 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
-import { PasswordService } from '../../common/password.service';
-import { UserRecord } from 'firebase-admin/lib/auth/user-record';
+import { PasswordService } from '../../auth/services/password.service';
+import { AuthService } from '../../auth/services/auth.service';
+import { UpdateRequest } from 'firebase-admin/lib/auth/auth-config';
 
 @Injectable()
 export class UserService {
   constructor(
+    private readonly authService: AuthService,
     private readonly passwordService: PasswordService,
     @InjectFirebaseAdmin() private readonly firebase: FirebaseAdmin,
   ) {}
 
   async create(name: string, email: string, password: string) {
-    const reasons = this.passwordService.checkPassword(password);
+    this.passwordService.checkPassword(password);
 
-    if (reasons.length > 0) {
-      throw new BadRequestException(reasons);
-    }
-
-    let user: UserRecord;
     try {
-      user = await this.firebase.auth.createUser({
+      return await this.firebase.auth.createUser({
         displayName: name,
         email: email,
         emailVerified: false,
@@ -29,41 +26,33 @@ export class UserService {
     } catch (e) {
       throw new BadRequestException(e);
     }
-
-    return user;
   }
 
-  async updateDisplayName(uid: string, displayName: string) {
-    return await this.firebase.auth.updateUser(uid, {
-      displayName: displayName,
-    });
-  }
-
-  async updatePassword(
+  async update(
     uid: string,
+    displayName: string,
     currentPassword: string,
     newPassword: string,
   ) {
-    const user = await this.firebase.auth.getUser(uid);
+    const request: UpdateRequest = {};
 
-    const validated = await this.passwordService.validatePassword(
-      currentPassword,
-      user.passwordHash,
-      user.passwordSalt,
-    );
-
-    if (!validated) {
-      throw new BadRequestException('The password is not correct');
+    if (displayName) {
+      request.displayName = displayName;
     }
 
-    const reasons = this.passwordService.checkPassword(newPassword);
-
-    if (reasons.length > 0) {
-      throw new BadRequestException(reasons);
+    if (currentPassword && newPassword) {
+      // Validate the current password
+      const user = await this.firebase.auth.getUser(uid);
+      await this.passwordService.validatePassword(
+        currentPassword,
+        user.passwordHash,
+        user.passwordSalt,
+      );
+      // Check if the password meets all the requirements
+      this.passwordService.checkPassword(newPassword);
+      request.password = newPassword;
     }
 
-    return await this.firebase.auth.updateUser(uid, {
-      password: newPassword,
-    });
+    return await this.firebase.auth.updateUser(uid, request);
   }
 }

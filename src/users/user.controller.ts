@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -12,12 +19,13 @@ import { UserService } from './services/user.service';
 import { ProfileService } from './services/profile.service';
 import { UpdateUserInput } from './dto/input/update-user.input';
 import { Public } from '../auth/decorators/public.decorator';
-import { AuthService } from '../auth/auth.service';
+import { AuthService } from '../auth/services/auth.service';
+import { PasswordErrorDescription } from '../auth/errors/password.error';
 
 @ApiBearerAuth()
 @ApiTags('User')
 @ApiResponse({
-  status: 401,
+  status: HttpStatus.UNAUTHORIZED,
   description: 'Unauthorised users',
 })
 @Controller('user')
@@ -29,12 +37,6 @@ export class UserController {
   ) {}
 
   @Public()
-  @Get()
-  async test(): Promise<string> {
-    return 'Test Success';
-  }
-
-  @Public()
   @ApiOperation({
     summary: 'Register with email',
   })
@@ -44,12 +46,12 @@ export class UserController {
     type: CreateUserInput,
   })
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: 'The user has been created successfully',
   })
   @ApiResponse({
-    status: 400,
-    description: 'Invalid request body',
+    status: HttpStatus.BAD_REQUEST,
+    description: PasswordErrorDescription,
   })
   @Post()
   async create(@Body() input: CreateUserInput): Promise<void> {
@@ -73,7 +75,7 @@ export class UserController {
     type: UpdateUserInput,
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'Invalid request body',
   })
   @Patch(':uid')
@@ -81,15 +83,11 @@ export class UserController {
     @Param('uid') uid: string,
     @Body() input: UpdateUserInput,
   ): Promise<void> {
-    if (input.displayName) {
-      await this.usersService.updateDisplayName(uid, input.displayName);
-    }
-    if (input.currentPassword && input.newPassword) {
-      await this.usersService.updatePassword(
-        uid,
-        input.currentPassword,
-        input.newPassword,
-      );
-    }
+    await this.usersService.update(
+      uid,
+      input.displayName,
+      input.currentPassword,
+      input.newPassword,
+    );
   }
 }

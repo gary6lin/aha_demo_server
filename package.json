@@ -20,14 +20,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@nestjs/axios": "^2.0.0",
     "@nestjs/common": "^9.0.0",
     "@nestjs/core": "^9.0.0",
     "@nestjs/platform-express": "^9.0.0",
     "@nestjs/swagger": "^6.3.0",
     "@prisma/client": "^4.13.0",
     "@supabase/supabase-js": "^2.21.0",
-    "axios": "^1.4.0",
     "bcrypt": "^5.1.0",
     "nestjs-firebase": "^9.0.0",
     "reflect-metadata": "^0.1.13",
