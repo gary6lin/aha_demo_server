@@ -20,7 +20,7 @@ import { ProfileService } from './services/profile.service';
 import { UpdateUserInput } from './dto/input/update-user.input';
 import { Public } from '../auth/decorators/public.decorator';
 import { AuthService } from '../auth/services/auth.service';
-import { PasswordErrorDescription } from '../auth/errors/password.error';
+import { PasswordFormatErrorDescription } from '../auth/errors/password-format.error';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -51,7 +51,7 @@ export class UserController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: PasswordErrorDescription,
+    description: PasswordFormatErrorDescription,
   })
   @Post()
   async create(@Body() input: CreateUserInput): Promise<void> {

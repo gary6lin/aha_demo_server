@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { hash } from 'bcrypt';
-import { PasswordError } from '../errors/password.error';
+import { PasswordFormatError } from '../errors/password-format.error';
+import { InvalidPasswordError } from '../errors/invalid-password.error';
 
 @Injectable()
 export class PasswordService {
@@ -15,7 +16,7 @@ export class PasswordService {
     // Throw an error if the hash generated from the currentPassword
     // does not match to the passwordHash stored on Firebase Auth
     if (hashedPassword != passwordHash) {
-      throw new BadRequestException('The password is not correct');
+      throw new BadRequestException(InvalidPasswordError);
     }
   }
 
@@ -40,22 +41,22 @@ export class PasswordService {
     // Check if the password match the above requirements
     const errors: { errorCode: string; description: string }[] = [];
     if (!lowerChar.test(password)) {
-      errors.push(PasswordError.noLowerChar);
+      errors.push(PasswordFormatError.noLowerChar);
     }
     if (!upperChar.test(password)) {
-      errors.push(PasswordError.noUpperChar);
+      errors.push(PasswordFormatError.noUpperChar);
     }
     if (!numberChar.test(password)) {
-      errors.push(PasswordError.noNumberChar);
+      errors.push(PasswordFormatError.noNumberChar);
     }
     if (!specialChar.test(password)) {
-      errors.push(PasswordError.noSpecialChar);
+      errors.push(PasswordFormatError.noSpecialChar);
     }
     if (!passwordLength.test(password)) {
-      errors.push(PasswordError.insufficientLength);
+      errors.push(PasswordFormatError.insufficientLength);
     }
     if (!noWhitespace.test(password)) {
-      errors.push(PasswordError.hasWhitespace);
+      errors.push(PasswordFormatError.hasWhitespace);
     }
 
     throw new BadRequestException(errors);
