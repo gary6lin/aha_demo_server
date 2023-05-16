@@ -39,7 +39,7 @@ export class PasswordService {
     //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\d\s])(?!.*\s).{8,}$/;
 
     // Check if the password match the above requirements
-    const errors: { errorCode: string; description: string }[] = [];
+    const errors = [];
     if (!lowerChar.test(password)) {
       errors.push(PasswordFormatError.noLowerChar);
     }
@@ -59,6 +59,8 @@ export class PasswordService {
       errors.push(PasswordFormatError.hasWhitespace);
     }
 
-    throw new BadRequestException(errors);
+    if (errors.length > 0) {
+      throw new BadRequestException(errors);
+    }
   }
 }
