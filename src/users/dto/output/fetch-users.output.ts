@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRecord } from 'firebase-admin/lib/auth/user-record';
+import { UserMetadata } from 'firebase-admin/lib/auth/user-record';
 
 export class FetchUsersOutput {
   @ApiProperty({
     description:
-      'The list of UserRecord objects for the current downloaded batch',
+      'The page size, 1000 if undefined. This is also the maximum allowed limit.',
   })
-  // @IsString()
   readonly users: UserRecord[];
 
   @ApiProperty({
@@ -14,4 +13,11 @@ export class FetchUsersOutput {
       'The next page token. If not specified, returns users starting without any offset.',
   })
   readonly pageToken?: string;
+}
+
+export class UserRecord {
+  readonly email?: string;
+  readonly photoURL?: string;
+  readonly displayName?: string;
+  readonly metadata: UserMetadata;
 }

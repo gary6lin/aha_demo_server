@@ -64,6 +64,7 @@ export class UserService {
     try {
       return await this.firebase.auth.listUsers(maxResults, pageToken);
     } catch (e) {
+      console.log(e);
       throw new BadRequestException(e);
     }
   }

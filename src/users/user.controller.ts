@@ -4,6 +4,7 @@ import {
   Get,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -115,7 +116,7 @@ export class UserController {
   })
   @Get('users')
   async findUsers(
-    @Query('maxResults') maxResults?: number,
+    @Query('maxResults', ParseIntPipe) maxResults?: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<FetchUsersOutput> {
     return await this.usersService.findUsers(maxResults, pageToken);
