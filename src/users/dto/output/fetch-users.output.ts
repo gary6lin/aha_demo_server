@@ -13,5 +13,5 @@ export class FetchUsersOutput {
     description:
       'The next page token. If not specified, returns users starting without any offset.',
   })
-  readonly pageToken: string;
+  readonly pageToken?: string;
 }

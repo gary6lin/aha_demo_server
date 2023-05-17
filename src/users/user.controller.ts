@@ -23,6 +23,7 @@ import { UpdateUserInput } from './dto/input/update-user.input';
 import { Public } from '../auth/decorators/public.decorator';
 import { AuthService } from '../auth/services/auth.service';
 import { PasswordFormatErrorDescription } from '../auth/errors/password-format.error';
+import { FetchUsersOutput } from './dto/output/fetch-users.output';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -116,7 +117,7 @@ export class UserController {
   async findUsers(
     @Query('maxResults') maxResults?: number,
     @Query('pageToken') pageToken?: string,
-  ): Promise<void> {
+  ): Promise<FetchUsersOutput> {
     return await this.usersService.findUsers(maxResults, pageToken);
   }
 }
