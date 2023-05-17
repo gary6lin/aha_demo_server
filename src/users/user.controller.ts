@@ -1,16 +1,18 @@
 import {
   Body,
   Controller,
+  Get,
   HttpStatus,
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -28,7 +30,7 @@ import { PasswordFormatErrorDescription } from '../auth/errors/password-format.e
   status: HttpStatus.UNAUTHORIZED,
   description: 'Unauthorised users',
 })
-@Controller('user')
+@Controller()
 export class UserController {
   constructor(
     private readonly authService: AuthService,
@@ -38,24 +40,19 @@ export class UserController {
 
   @Public()
   @ApiOperation({
-    summary: 'Register with email',
-  })
-  @ApiBody({
-    required: true,
-    description: 'The input data for creating a new user',
-    type: CreateUserInput,
+    summary: 'Creates a new user with email and password.',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'The user has been created successfully',
+    description: 'The user has been created successfully.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: PasswordFormatErrorDescription,
   })
-  @Post()
-  async create(@Body() input: CreateUserInput): Promise<void> {
-    const user = await this.usersService.create(
+  @Post('user')
+  async createUser(@Body() input: CreateUserInput): Promise<void> {
+    const user = await this.usersService.createUser(
       input.displayName,
       input.email,
       input.password,
@@ -63,31 +60,63 @@ export class UserController {
     await this.profileService.create(user.uid);
   }
 
+  @ApiOperation({
+    summary: 'Updates an existing user.',
+  })
   @ApiParam({
     name: 'uid',
-    required: true,
-    description: 'The users id from Firebase Auth',
-    type: String,
+    description: 'The users id from Firebase Auth.',
   })
-  @ApiBody({
-    required: true,
-    description: 'The input data for updating the user information',
-    type: UpdateUserInput,
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'The user has been updated successfully.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid request body',
+    description: 'Invalid request body.',
   })
-  @Patch(':uid')
-  async update(
+  @Patch('user/:uid')
+  async updateUser(
     @Param('uid') uid: string,
     @Body() input: UpdateUserInput,
   ): Promise<void> {
-    await this.usersService.update(
+    await this.usersService.updateUser(
       uid,
       input.displayName,
       input.currentPassword,
       input.newPassword,
     );
+  }
+
+  @ApiOperation({
+    summary:
+      'Retrieves all the users in batches with a size of maxResults starting from the offset as specified by pageToken.',
+  })
+  @ApiQuery({
+    name: 'maxResults',
+    required: false,
+    description:
+      'The page size, 1000 if undefined. This is also the maximum allowed limit.',
+  })
+  @ApiQuery({
+    name: 'pageToken',
+    required: false,
+    description:
+      'The next page token. If not specified, returns users starting without any offset.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'OK',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid request body.',
+  })
+  @Get('users')
+  async findUsers(
+    @Query('maxResults') maxResults?: number,
+    @Query('pageToken') pageToken?: string,
+  ): Promise<void> {
+    return await this.usersService.findUsers(maxResults, pageToken);
   }
 }

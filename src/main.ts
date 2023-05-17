@@ -20,9 +20,6 @@ async function bootstrap() {
 
   await app.listen(3000);
   console.log(`Application is running on: ${await app.getUrl()}`);
-
-  // const map = new Map(Object.entries(PasswordFormatError));
-  // console.log(Object.fromEntries([...map]));
 }
 
 bootstrap();

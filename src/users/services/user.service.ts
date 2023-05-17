@@ -12,7 +12,7 @@ export class UserService {
     @InjectFirebaseAdmin() private readonly firebase: FirebaseAdmin,
   ) {}
 
-  async create(name: string, email: string, password: string) {
+  async createUser(name: string, email: string, password: string) {
     this.passwordService.checkPassword(password);
 
     try {
@@ -28,7 +28,7 @@ export class UserService {
     }
   }
 
-  async update(
+  async updateUser(
     uid: string,
     displayName: string,
     currentPassword: string,
@@ -53,6 +53,18 @@ export class UserService {
       request.password = newPassword;
     }
 
-    return await this.firebase.auth.updateUser(uid, request);
+    try {
+      return await this.firebase.auth.updateUser(uid, request);
+    } catch (e) {
+      throw new BadRequestException(e);
+    }
+  }
+
+  async findUsers(maxResults?: number, pageToken?: string) {
+    try {
+      return await this.firebase.auth.listUsers(maxResults, pageToken);
+    } catch (e) {
+      throw new BadRequestException(e);
+    }
   }
 }
