@@ -13,9 +13,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.ref_name }}
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
-          fetch-depth: 0 # otherwise, you will fail to push refs to dest repo
+          fetch-depth: 0 # Let's get all the branches, otherwise, you will fail to push refs to dest repo
 
       - name: Update the env file
         run: |
@@ -31,12 +30,6 @@ jobs:
           message: 'Update the env file via GitHub Actions'
           branch: 'main'
           force: true
-
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: release
-          fetch-depth: 0 # Let's get all the branches
 
       - name: Merge changes from main to release branch
         uses: devvspaces/merge-branches@v1
