@@ -26,13 +26,19 @@ jobs:
           echo "VERSION_CODE=${{ steps.version_by_tag.outputs.versionCode }}" >> .env.release
           echo "COMMIT_SHA=${{ github.sha }}" >> .env.release
 
+
+      - name: Configure GitHub CLI
+        run: |
+          echo ${{ secrets.PAT }} | gh auth login --with-token
+          gh config set prompt disabled
+
       - name: Commit and push changes to main branch
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add .
           git commit -m "Update .env.release file via GitHub Actions"
-          git push origin HEAD:${{ github.ref }}
+          gh pr create --title "Update .env.release" --body "Automated PR for updating .env.release file" --base main
 
       - name: Checkout release branch
         uses: actions/checkout@v2
