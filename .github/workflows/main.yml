@@ -39,7 +39,12 @@ jobs:
           git config user.email "actions@github.com"
           git add .
           git commit -m "Update .env.release file via GitHub Actions"
-          git push origin main
+
+      - name: Push changes to main branch
+        env:
+          PAT: ${{ secrets.PAT }}
+        run: |
+          git push https://github.com/${{ github.repository }} HEAD:${{ github.ref }} --force
 
       - name: Checkout release branch
         uses: actions/checkout@v2
@@ -47,9 +52,13 @@ jobs:
           ref: release
 
       - name: Merge changes from main to release branch
+        env:
+          PAT: ${{ secrets.PAT }}
         run: |
           git merge --no-ff --no-commit main
 
       - name: Push changes to release branch
+        env:
+          PAT: ${{ secrets.PAT }}
         run: |
-          git push origin release
+          git push https://github.com/${{ github.repository }} HEAD:${{ github.ref }} --force
