@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: main
 
       - name: Fetch version from tag
         uses: xom9ikk/version-by-tag@v1
@@ -26,7 +28,6 @@ jobs:
           echo "VERSION_CODE=${{ steps.version_by_tag.outputs.versionCode }}" >> .env.release
           echo "COMMIT_SHA=${{ github.sha }}" >> .env.release
 
-
       - name: Configure GitHub CLI
         run: |
           echo ${{ secrets.PAT }} | gh auth login --with-token
@@ -38,7 +39,7 @@ jobs:
           git config user.email "actions@github.com"
           git add .
           git commit -m "Update .env.release file via GitHub Actions"
-          gh pr create --title "Update .env.release" --body "Automated PR for updating .env.release file" --base main
+          git push origin main
 
       - name: Checkout release branch
         uses: actions/checkout@v2
@@ -51,4 +52,4 @@ jobs:
 
       - name: Push changes to release branch
         run: |
-          git push origin HEAD:${{ github.ref }}
+          git push origin release
