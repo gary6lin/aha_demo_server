@@ -74,6 +74,6 @@
     "testEnvironment": "node"
   },
   "engines": {
-    "node": ">=18"
+    "node": "^16.14.0 || >=18.10.0"
   }
 }
