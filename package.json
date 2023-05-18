@@ -1,8 +1,7 @@
 {
-  "name": "aha-simple-login",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "name": "aha-demo-server",
+  "description": "A simple login demo server for the Aha exam",
+  "author": "Gary Lin",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
