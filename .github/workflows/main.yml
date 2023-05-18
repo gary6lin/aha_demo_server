@@ -25,7 +25,7 @@ jobs:
       - name: Commit and push changes
         uses: actions-js/push@v1.4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PAT }}
           author_name: 'GitHub Actions'
           author_email: 'actions@github.com'
           message: 'Update the env file via GitHub Actions'
@@ -35,6 +35,6 @@ jobs:
       - name: Merge changes from main to release branch
         uses: devvspaces/merge-branches@v1
         with:
-          token: ${{ github.token }}
+          token: ${{ secrets.PAT }}
           from_branch: main
           to_branch: release
