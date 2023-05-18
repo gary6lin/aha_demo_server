@@ -17,17 +17,9 @@ jobs:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Let's get all the branches, otherwise, you will fail to
 
-      - name: Fetch version from tag
-        uses: xom9ikk/version-by-tag@v1
-        id: version_by_tag
-        with:
-          tagName: ${{ github.ref_name }}
-          isUseGithubRunNumber: true
-
       - name: Update the env file
         run: |
-          echo "VERSION=${{ steps.version_by_tag.outputs.semver }}" > .env.release
-          echo "VERSION_CODE=${{ steps.version_by_tag.outputs.versionCode }}" >> .env.release
+          echo "VERSION=${{ github.ref_name }}" > .env.release
           echo "COMMIT_SHA=${{ github.sha }}" >> .env.release
 
       - name: Commit and push changes
