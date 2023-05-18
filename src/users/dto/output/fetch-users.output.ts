@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserMetadata } from 'firebase-admin/lib/auth/user-record';
 
 export class FetchUsersOutput {
   @ApiProperty({
@@ -19,5 +18,5 @@ export class UserRecord {
   readonly email?: string;
   readonly photoURL?: string;
   readonly displayName?: string;
-  readonly metadata: UserMetadata;
+  readonly metadata: any;
 }

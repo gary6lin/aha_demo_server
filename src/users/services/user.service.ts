@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
 import { PasswordService } from '../../auth/services/password.service';
 import { AuthService } from '../../auth/services/auth.service';
-import { UpdateRequest } from 'firebase-admin/lib/auth/auth-config';
 
 @Injectable()
 export class UserService {
@@ -34,7 +33,7 @@ export class UserService {
     currentPassword: string,
     newPassword: string,
   ) {
-    const request: UpdateRequest = {};
+    const request: { displayName?: string; password?: string } = {};
 
     if (displayName) {
       request.displayName = displayName;
@@ -64,7 +63,6 @@ export class UserService {
     try {
       return await this.firebase.auth.listUsers(maxResults, pageToken);
     } catch (e) {
-      console.log(e);
       throw new BadRequestException(e);
     }
   }
