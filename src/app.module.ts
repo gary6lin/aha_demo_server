@@ -8,11 +8,8 @@ import { UserModule } from './users/user.module';
     FirebaseModule.forRoot({
       googleApplicationCredential: './firebase-credential.json',
     }),
-    // DatabaseModule,
     AuthModule,
     UserModule,
   ],
-  // controllers: [UserController],
-  // providers: [ProfileService],
 })
 export class AppModule {}

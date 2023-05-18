@@ -1,0 +1,37 @@
+name: Release web app
+
+on:
+  workflow_dispatch:
+  release:
+    types: [ released ]
+
+jobs:
+  deployment:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Fetch version from tag
+        uses: xom9ikk/version-by-tag@v1
+        id: version_by_tag
+        with:
+          tagName: ${{ github.ref_name }}
+          isUseGithubRunNumber: true
+
+      - name: Build NestJS App
+        run: |-
+          VERSION=${{ steps.version_by_tag.outputs.semver }}\
+          VERSION_CODE=${{ steps.version_by_tag.outputs.versionCode }} \
+          nest build
+
+      - name: Push git subdirectory as release branch (to trigger autodeploy)
+        uses: s0/git-publish-subdir-action@v2.6.0
+        env:
+          REPO: self
+          BRANCH: release
+          FOLDER: dist
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

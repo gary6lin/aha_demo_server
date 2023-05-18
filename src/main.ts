@@ -11,12 +11,12 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Aha Demo')
-    .setDescription('A simple login demo for the Aha exam')
-    .setVersion('1.0')
+    .setDescription('Simple login APIs for the Aha exam')
+    .setVersion(process.env.VERSION)
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/v1', app, document);
+  SwaggerModule.setup('api', app, document);
 
   await app.listen(3000);
   console.log(`Application is running on: ${await app.getUrl()}`);
