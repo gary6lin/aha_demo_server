@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: main
 
       - name: Fetch version from tag
         uses: xom9ikk/version-by-tag@v1
@@ -28,6 +26,14 @@ jobs:
           echo "VERSION_CODE=${{ steps.version_by_tag.outputs.versionCode }}" >> .env.release
           echo "COMMIT_SHA=${{ github.sha }}" >> .env.release
 
+      - name: Commit and push changes to main branch
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Update .env.release file via GitHub Actions"
+          git push origin HEAD:${{ github.ref }}
+
       - name: Checkout release branch
         uses: actions/checkout@v2
         with:
@@ -35,8 +41,8 @@ jobs:
 
       - name: Merge changes from main to release branch
         run: |
-          git merge --no-ff --no-commit origin/main
+          git merge --no-ff --no-commit main
 
       - name: Push changes to release branch
         run: |
-          git push origin release
+          git push origin HEAD:${{ github.ref }}
