@@ -35,7 +35,7 @@ jobs:
 
       - name: Merge changes from main to release branch
         run: |
-          git merge --no-ff --no-commit main
+          git merge --no-ff --no-commit origin/main
 
       - name: Push changes to release branch
         run: |
