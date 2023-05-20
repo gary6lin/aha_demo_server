@@ -19,7 +19,6 @@ import {
 } from '@nestjs/swagger';
 import { CreateUserInput } from './dto/input/create-user.input';
 import { UserService } from './services/user.service';
-import { ProfileService } from './services/profile.service';
 import { UpdateUserInput } from './dto/input/update-user.input';
 import { Public } from '../auth/decorators/public.decorator';
 import { AuthService } from '../auth/services/auth.service';
@@ -37,7 +36,6 @@ export class UserController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UserService,
-    private readonly profileService: ProfileService,
   ) {}
 
   @Public()
@@ -54,16 +52,15 @@ export class UserController {
   })
   @Post('user')
   async createUser(@Body() input: CreateUserInput): Promise<void> {
-    const user = await this.usersService.createUser(
+    await this.usersService.createUser(
       input.displayName,
       input.email,
       input.password,
     );
-    await this.profileService.create(user.uid);
   }
 
   @ApiOperation({
-    summary: 'Updates an existing user.',
+    summary: 'Updates the information of an existing user.',
   })
   @ApiParam({
     name: 'uid',
@@ -77,19 +74,42 @@ export class UserController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid request body.',
   })
-  @Patch('user/:uid')
+  @Patch('user/:uid/info')
+  async updateUserInfo(
+    @Param('uid') uid: string,
+    @Body() input: UpdateUserInput,
+  ): Promise<void> {
+    await this.usersService.updateUserInfo(uid, input.displayName);
+  }
+
+  @ApiOperation({
+    summary: 'Updates the password of an existing user.',
+  })
+  @ApiParam({
+    name: 'uid',
+    description: 'The users id from Firebase Auth.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'The user has been updated successfully.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid request body.',
+  })
+  @Patch('user/:uid/password')
   async updateUser(
     @Param('uid') uid: string,
     @Body() input: UpdateUserInput,
   ): Promise<void> {
-    await this.usersService.updateUser(
+    await this.usersService.updateUserPassword(
       uid,
-      input.displayName,
       input.currentPassword,
       input.newPassword,
     );
   }
 
+  @Public()
   @ApiOperation({
     summary:
       'Retrieves all the users in batches with a size of maxResults starting from the offset as specified by pageToken.',
@@ -108,7 +128,7 @@ export class UserController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'OK',
+    type: FetchUsersOutput,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -119,6 +139,10 @@ export class UserController {
     @Query('maxResults', ParseIntPipe) maxResults?: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<FetchUsersOutput> {
-    return await this.usersService.findUsers(maxResults, pageToken);
+    const users = await this.usersService.findUsers(maxResults, pageToken);
+    return {
+      users: users,
+      pageToken: users.length > 0 ? users[users.length - 1].uid : null,
+    } as FetchUsersOutput;
   }
 }
