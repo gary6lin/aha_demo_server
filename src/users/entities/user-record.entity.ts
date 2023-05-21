@@ -12,6 +12,6 @@ export class UserRecordEntity {
 
 export class UserMetadataEntity {
   readonly creationTime: string;
-  readonly lastSignInTime: string;
+  readonly lastSignInTime?: string;
   readonly lastRefreshTime?: string;
 }

@@ -36,7 +36,7 @@ export class UserService {
       const userModel = this.userRecordToUserModel(userRecord);
       return await this.upsertUserCopy(userModel);
     } catch (e) {
-      throw new BadRequestException(e);
+      throw new InternalServerErrorException(e);
     }
   }
 
@@ -105,12 +105,21 @@ export class UserService {
       throw new BadRequestException();
     }
     try {
+      // Use uid for pageToken
+      // const cursor: { uid?: string } = {};
+      // if (pageToken) {
+      //   cursor.uid = pageToken;
+      // }
       // Find the users from our database for a more granular control
       const userCopies = await this.prisma.userCopy.findMany({
-        skip: pageToken ? 0 : 1, // Skip the cursor
-        take: pageSize > MAX_PAGE_SIZE ? MAX_PAGE_SIZE : pageSize,
+        skip: pageToken ? 1 : 0, // Skip the cursor
+        take: 20,
         cursor: {
-          uid: pageToken,
+          uid: pageToken ?? '',
+        },
+        where: {},
+        orderBy: {
+          creationTime: 'asc',
         },
       });
       return userCopies as UserModel[];
@@ -120,14 +129,19 @@ export class UserService {
   }
 
   async upsertUserCopy(data: UserModel) {
-    // Update an existing user or create a new user if not exist
-    return this.prisma.userCopy.upsert({
-      where: {
-        uid: data.uid,
-      },
-      create: { ...data },
-      update: { ...data },
-    });
+    // Count the total number of users
+    try {
+      // Update an existing user or create a new user if not exist
+      return this.prisma.userCopy.upsert({
+        where: {
+          uid: data.uid,
+        },
+        create: { ...data },
+        update: { ...data },
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
   }
 
   async countUsers() {
@@ -211,7 +225,13 @@ export class UserService {
     const lastSignInTime = userRecord.metadata.lastSignInTime;
     const lastRefreshTime = userRecord.metadata.lastRefreshTime;
     return {
-      ...userRecord,
+      uid: userRecord.uid,
+      email: userRecord.email,
+      emailVerified: userRecord.emailVerified,
+      displayName: userRecord.displayName,
+      photoURL: userRecord.photoURL,
+      passwordHash: userRecord.passwordHash,
+      passwordSalt: userRecord.passwordSalt,
       tokensValidAfterTime: tokensValidAfterTime
         ? new Date(tokensValidAfterTime)
         : tokensValidAfterTime,

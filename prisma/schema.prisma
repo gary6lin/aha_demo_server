@@ -13,7 +13,7 @@ datasource db {
 
 model UserCopy {
   uid                  String    @id
-  email                String?   @unique
+  email                String?
   emailVerified        Boolean
   displayName          String?
   photoURL             String?
@@ -22,7 +22,7 @@ model UserCopy {
   tokensValidAfterTime DateTime?
 
   creationTime    DateTime
-  lastSignInTime  DateTime
+  lastSignInTime  DateTime?
   lastRefreshTime DateTime?
 }
 

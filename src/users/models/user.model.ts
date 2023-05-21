@@ -9,6 +9,6 @@ export class UserModel {
   readonly tokensValidAfterTime?: Date;
 
   readonly creationTime: Date;
-  readonly lastSignInTime: Date;
+  readonly lastSignInTime?: Date;
   readonly lastRefreshTime?: Date;
 }
