@@ -105,11 +105,6 @@ export class UserService {
       throw new BadRequestException();
     }
     try {
-      // Use uid for pageToken
-      // const cursor: { uid?: string } = {};
-      // if (pageToken) {
-      //   cursor.uid = pageToken;
-      // }
       // Find the users from our database for a more granular control
       const userCopies = await this.prisma.userCopy.findMany({
         skip: pageToken ? 1 : 0, // Skip the cursor
@@ -128,8 +123,19 @@ export class UserService {
     }
   }
 
+  async pullUserAndUpdate(uid: string) {
+    try {
+      // Get the user from Firebase Auth
+      const userRecord = await this.firebase.auth.getUser(uid);
+      // And update the password in our database as well
+      const userModel = this.userRecordToUserModel(userRecord);
+      return await this.upsertUserCopy(userModel);
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
+
   async upsertUserCopy(data: UserModel) {
-    // Count the total number of users
     try {
       // Update an existing user or create a new user if not exist
       return this.prisma.userCopy.upsert({
@@ -145,8 +151,8 @@ export class UserService {
   }
 
   async countUsers() {
-    // Count the total number of users
     try {
+      // Count the total number of users
       return await this.prisma.userCopy.count();
     } catch (e) {
       throw new InternalServerErrorException(e);

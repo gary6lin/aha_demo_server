@@ -20,7 +20,6 @@ import {
 } from '@nestjs/swagger';
 import { CreateUserInput } from './dto/input/create-user.input';
 import { UserService } from './services/user.service';
-import { UpdateUserInput } from './dto/input/update-user.input';
 import { Public } from '../auth/decorators/public.decorator';
 import { AuthService } from '../auth/services/auth.service';
 import { PasswordFormatErrorDescription } from '../auth/errors/password-format.error';
@@ -74,7 +73,7 @@ export class UserController {
   }
 
   @ApiOperation({
-    summary: 'Updates an existing user.',
+    summary: 'Pull the user from Firebase Auth and updates in our database.',
   })
   @ApiParam({
     name: 'uid',
@@ -89,11 +88,8 @@ export class UserController {
     description: 'Invalid request body.',
   })
   @Patch('user/:uid')
-  async updateUser(
-    @Param('uid') uid: string,
-    @Body() input: UpdateUserInput,
-  ): Promise<void> {
-    await this.usersService.upsertUserCopy({ uid: uid, ...input });
+  async updateUser(@Param('uid') uid: string): Promise<void> {
+    await this.usersService.pullUserAndUpdate(uid);
   }
 
   @ApiOperation({
