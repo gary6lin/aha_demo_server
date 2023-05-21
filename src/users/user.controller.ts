@@ -5,7 +5,6 @@ import {
   HttpStatus,
   Inject,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -142,7 +141,6 @@ export class UserController {
     );
   }
 
-  @Public()
   @ApiOperation({
     summary:
       'Retrieves all the users in batches with a size of pageSize starting from the offset as specified by pageToken.',
@@ -168,7 +166,7 @@ export class UserController {
   })
   @Get('users')
   async findUsers(
-    @Query('pageSize', ParseIntPipe) pageSize?: number,
+    @Query('pageSize') pageSize = MAX_PAGE_SIZE,
     @Query('pageToken') pageToken?: string,
   ): Promise<FindUsersOutput> {
     const users = await this.usersService.findUsers(pageSize, pageToken);
@@ -197,7 +195,7 @@ export class UserController {
   })
   @Get('users-statistic')
   async findUsersStatistic(
-    @Query('numberOfDays', ParseIntPipe) numberOfDays = DEFAULT_NUMBER_OF_DAYS,
+    @Query('numberOfDays') numberOfDays = DEFAULT_NUMBER_OF_DAYS,
   ) {
     // Read the total users from cache first
     let totalUsers = await this.cacheManager.get<number>(TOTAL_USERS_KEY);
@@ -226,14 +224,18 @@ export class UserController {
     }
 
     // Read the average active users from cache first
-    let average = await this.cacheManager.get<number>(AVERAGE_ACTIVE_USERS_KEY);
-    if (!average) {
+    let averageActiveUsers = await this.cacheManager.get<number>(
+      AVERAGE_ACTIVE_USERS_KEY,
+    );
+    if (!averageActiveUsers) {
       // or get the value again from the database if the ttl expires
-      average = await this.usersService.findAverageActiveUsers(numberOfDays);
+      averageActiveUsers = await this.usersService.findAverageActiveUsers(
+        numberOfDays,
+      );
       // Set the result to cache for the next use
       await this.cacheManager.set<number>(
         AVERAGE_ACTIVE_USERS_KEY,
-        average,
+        averageActiveUsers,
         STATISTICS_TTL,
       );
     }
@@ -241,7 +243,7 @@ export class UserController {
     return {
       totalUsers: totalUsers,
       activeUsers: activeUsers,
-      averageActiveUsers: average,
+      averageActiveUsers: averageActiveUsers,
     } as StatisticOutput;
   }
 }

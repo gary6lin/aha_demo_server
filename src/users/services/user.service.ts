@@ -8,7 +8,7 @@ import { PasswordService } from '../../auth/services/password.service';
 import { AuthService } from '../../auth/services/auth.service';
 import { PrismaService } from '../../database/prisma.service';
 import { UserModel } from '../models/user.model';
-import { DEFAULT_NUMBER_OF_DAYS, MAX_PAGE_SIZE } from '../constants';
+import { DEFAULT_NUMBER_OF_DAYS } from '../constants';
 import { UserRecordEntity } from '../entities/user-record.entity';
 
 @Injectable()
@@ -100,7 +100,7 @@ export class UserService {
     }
   }
 
-  async findUsers(pageSize = MAX_PAGE_SIZE, pageToken?: string) {
+  async findUsers(pageSize: number, pageToken?: string) {
     if (pageSize < 1) {
       throw new BadRequestException();
     }
