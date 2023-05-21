@@ -9,6 +9,7 @@ import { AuthService } from '../../auth/services/auth.service';
 import { PrismaService } from '../../database/prisma.service';
 import { UserModel } from '../models/user.model';
 import { DEFAULT_NUMBER_OF_DAYS, MAX_PAGE_SIZE } from '../constants';
+import { UserRecordEntity } from '../entities/user-record.entity';
 
 @Injectable()
 export class UserService {
@@ -20,8 +21,8 @@ export class UserService {
   ) {}
 
   async createUser(name: string, email: string, password: string) {
+    // Check if the password meets all the requirements
     this.passwordService.checkPassword(password);
-
     try {
       // Create a new user on Firebase Auth
       const userRecord = await this.firebase.auth.createUser({
@@ -45,7 +46,7 @@ export class UserService {
       const userCopy = await this.prisma.userCopy.findUnique({
         where: { uid: uid },
       });
-      return { ...userCopy, metadata: { ...userCopy } };
+      return userCopy as UserModel;
     } catch (e) {
       try {
         // Then try the Firebase Auth if an unexpected error occurs
@@ -112,13 +113,7 @@ export class UserService {
           uid: pageToken,
         },
       });
-      // Cast the db entity to a model that we can play with
-      return userCopies.map((userCopy) => ({
-        ...userCopy,
-        metadata: {
-          ...userCopy,
-        },
-      })) as UserModel[];
+      return userCopies as UserModel[];
     } catch (e) {
       throw new InternalServerErrorException(e);
     }
@@ -130,8 +125,8 @@ export class UserService {
       where: {
         uid: data.uid,
       },
-      create: { ...data, ...data.metadata },
-      update: { ...data, ...data.metadata },
+      create: { ...data },
+      update: { ...data },
     });
   }
 
@@ -211,7 +206,7 @@ export class UserService {
     }
   }
 
-  private userRecordToUserModel(userRecord: any) {
+  private userRecordToUserModel(userRecord: UserRecordEntity) {
     const tokensValidAfterTime = userRecord.tokensValidAfterTime;
     const lastSignInTime = userRecord.metadata.lastSignInTime;
     const lastRefreshTime = userRecord.metadata.lastRefreshTime;
@@ -219,16 +214,14 @@ export class UserService {
       ...userRecord,
       tokensValidAfterTime: tokensValidAfterTime
         ? new Date(tokensValidAfterTime)
-        : null,
-      metadata: {
-        creationTime: new Date(userRecord.metadata.creationTime),
-        lastSignInTime: lastSignInTime
-          ? new Date(lastSignInTime)
-          : lastSignInTime,
-        lastRefreshTime: lastRefreshTime
-          ? new Date(lastRefreshTime)
-          : lastRefreshTime,
-      },
+        : tokensValidAfterTime,
+      creationTime: new Date(userRecord.metadata.creationTime),
+      lastSignInTime: lastSignInTime
+        ? new Date(lastSignInTime)
+        : lastSignInTime,
+      lastRefreshTime: lastRefreshTime
+        ? new Date(lastRefreshTime)
+        : lastRefreshTime,
     } as UserModel;
   }
 }

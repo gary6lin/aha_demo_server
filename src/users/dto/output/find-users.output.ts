@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRecord } from '../user-record';
 
-export class FetchUsersOutput {
+export class FindUsersOutput {
   @ApiProperty({
     description:
       'The page size, 1000 if undefined. This is also the maximum allowed limit.',

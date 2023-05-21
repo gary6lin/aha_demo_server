@@ -4,9 +4,9 @@ export class FetchUsersInput {
   @ApiProperty({
     required: false,
     description:
-      'The list of UserRecord objects for the current downloaded batch',
+      'The list of UserRecordEntity objects for the current downloaded batch',
   })
-  readonly maxResults: number;
+  readonly pageSize: number;
 
   @ApiProperty({
     required: false,

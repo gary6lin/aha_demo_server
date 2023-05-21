@@ -1,8 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserMetadata } from './user-metadata';
-import { UserModel } from '../models/user.model';
 
-export class UserRecord implements UserModel {
+export class UserRecord {
   @ApiProperty()
   readonly uid: string;
 
@@ -19,14 +17,14 @@ export class UserRecord implements UserModel {
   readonly photoURL?: string;
 
   @ApiProperty()
-  readonly passwordHash: string;
-
-  @ApiProperty()
-  readonly passwordSalt: string;
-
-  @ApiProperty()
   readonly tokensValidAfterTime: Date;
 
   @ApiProperty()
-  readonly metadata: UserMetadata;
+  readonly creationTime: Date;
+
+  @ApiProperty()
+  readonly lastSignInTime: Date;
+
+  @ApiProperty()
+  readonly lastRefreshTime?: Date;
 }

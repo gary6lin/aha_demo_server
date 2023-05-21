@@ -7,10 +7,7 @@ export class UserModel {
   readonly passwordHash?: string;
   readonly passwordSalt?: string;
   readonly tokensValidAfterTime?: Date;
-  readonly metadata: UserMetadataModel;
-}
 
-export class UserMetadataModel {
   readonly creationTime: Date;
   readonly lastSignInTime: Date;
   readonly lastRefreshTime?: Date;

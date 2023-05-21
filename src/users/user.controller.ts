@@ -24,12 +24,13 @@ import { UpdateUserInput } from './dto/input/update-user.input';
 import { Public } from '../auth/decorators/public.decorator';
 import { AuthService } from '../auth/services/auth.service';
 import { PasswordFormatErrorDescription } from '../auth/errors/password-format.error';
-import { FetchUsersOutput } from './dto/output/fetch-users.output';
+import { FindUsersOutput } from './dto/output/find-users.output';
 import { StatisticOutput } from './dto/output/statistic.output';
 import {
   ACTIVE_USERS_KEY,
   AVERAGE_ACTIVE_USERS_KEY,
   DEFAULT_NUMBER_OF_DAYS,
+  MAX_PAGE_SIZE,
   STATISTICS_TTL,
   TOTAL_USERS_KEY,
 } from './constants';
@@ -123,13 +124,12 @@ export class UserController {
   @Public()
   @ApiOperation({
     summary:
-      'Retrieves all the users in batches with a size of maxResults starting from the offset as specified by pageToken.',
+      'Retrieves all the users in batches with a size of pageSize starting from the offset as specified by pageToken.',
   })
   @ApiQuery({
-    name: 'maxResults',
+    name: 'pageSize',
     required: false,
-    description:
-      'The page size, 1000 if undefined. This is also the maximum allowed limit.',
+    description: `Defaults to ${MAX_PAGE_SIZE} if undefined. This is also the maximum allowed limit.`,
   })
   @ApiQuery({
     name: 'pageToken',
@@ -139,7 +139,7 @@ export class UserController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    type: FetchUsersOutput,
+    type: FindUsersOutput,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -147,14 +147,14 @@ export class UserController {
   })
   @Get('users')
   async findUsers(
-    @Query('maxResults', ParseIntPipe) maxResults?: number,
+    @Query('pageSize', ParseIntPipe) pageSize?: number,
     @Query('pageToken') pageToken?: string,
-  ): Promise<FetchUsersOutput> {
-    const users = await this.usersService.findUsers(maxResults, pageToken);
+  ): Promise<FindUsersOutput> {
+    const users = await this.usersService.findUsers(pageSize, pageToken);
     return {
       users: users,
       pageToken: users.length > 0 ? users[users.length - 1].uid : null,
-    } as FetchUsersOutput;
+    } as FindUsersOutput;
   }
 
   @ApiOperation({
