@@ -79,6 +79,13 @@ export class UserService {
   ) {
     // Validate the current password
     const user = await this.findUser(uid);
+
+    // The password hash and salt must exist
+    if (user.passwordHash && user.passwordSalt) {
+      throw new BadRequestException();
+    }
+
+    // Validate the current password
     await this.passwordService.validatePassword(
       currentPassword,
       user.passwordHash,
