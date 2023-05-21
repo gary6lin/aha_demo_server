@@ -228,7 +228,7 @@ export class UserService {
         sum += record.activeUsers;
       }
       const nod = records.length; // Use the result length in case if the records are less than the desired number of days
-      return sum / nod;
+      return Math.ceil(sum / nod);
     } catch (e) {
       throw new InternalServerErrorException(e);
     }
