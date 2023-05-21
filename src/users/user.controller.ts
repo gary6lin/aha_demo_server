@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Inject,
   Param,
   ParseIntPipe,
   Patch,
@@ -24,6 +25,15 @@ import { Public } from '../auth/decorators/public.decorator';
 import { AuthService } from '../auth/services/auth.service';
 import { PasswordFormatErrorDescription } from '../auth/errors/password-format.error';
 import { FetchUsersOutput } from './dto/output/fetch-users.output';
+import { StatisticOutput } from './dto/output/statistic.output';
+import {
+  ACTIVE_USERS_KEY,
+  AVERAGE_ACTIVE_USERS_KEY,
+  DEFAULT_NUMBER_OF_DAYS,
+  STATISTICS_TTL,
+  TOTAL_USERS_KEY,
+} from './constants';
+import { CACHE_MANAGER, CacheStore } from '@nestjs/cache-manager';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -36,6 +46,7 @@ export class UserController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UserService,
+    @Inject(CACHE_MANAGER) private cacheManager: CacheStore,
   ) {}
 
   @Public()
@@ -132,7 +143,7 @@ export class UserController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid request body.',
+    description: 'Invalid query value.',
   })
   @Get('users')
   async findUsers(
@@ -144,5 +155,75 @@ export class UserController {
       users: users,
       pageToken: users.length > 0 ? users[users.length - 1].uid : null,
     } as FetchUsersOutput;
+  }
+
+  @ApiOperation({
+    summary:
+      'The statistic for the users, such as the total users and the daily active users.',
+  })
+  @ApiQuery({
+    name: 'numberOfDays',
+    required: false,
+    description: `The number of days for calculating the average active users. Defaults to ${DEFAULT_NUMBER_OF_DAYS} days.`,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: StatisticOutput,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid query value.',
+  })
+  @Get('users-statistic')
+  async statistic(
+    @Query('numberOfDays', ParseIntPipe) numberOfDays = DEFAULT_NUMBER_OF_DAYS,
+  ) {
+    // Read the total users from cache first
+    let totalUsers = await this.cacheManager.get<number>(TOTAL_USERS_KEY);
+    console.log(`totalUsers: ${totalUsers}`);
+    if (!totalUsers) {
+      // or get the value again from the database if the ttl expires
+      totalUsers = await this.usersService.countUsers();
+      // Set the result to cache for the next use
+      await this.cacheManager.set<number>(
+        TOTAL_USERS_KEY,
+        totalUsers,
+        STATISTICS_TTL,
+      );
+    }
+
+    // Read the daily active users from cache first
+    let activeUsers = await this.cacheManager.get<number>(ACTIVE_USERS_KEY);
+    console.log(`activeUsers: ${activeUsers}`);
+    if (!activeUsers) {
+      // or get the value again from the database if the ttl expires
+      activeUsers = await this.usersService.countActiveUsers();
+      // Set the result to cache for the next use
+      await this.cacheManager.set<number>(
+        ACTIVE_USERS_KEY,
+        activeUsers,
+        STATISTICS_TTL,
+      );
+    }
+
+    // Read the average active users from cache first
+    let average = await this.cacheManager.get<number>(AVERAGE_ACTIVE_USERS_KEY);
+    console.log(`average: ${average}`);
+    if (!average) {
+      // or get the value again from the database if the ttl expires
+      average = await this.usersService.findAverageActiveUsers(numberOfDays);
+      // Set the result to cache for the next use
+      await this.cacheManager.set<number>(
+        AVERAGE_ACTIVE_USERS_KEY,
+        average,
+        STATISTICS_TTL,
+      );
+    }
+
+    return {
+      totalUsers: totalUsers,
+      activeUsers: activeUsers,
+      averageActiveUsers: average,
+    } as StatisticOutput;
   }
 }

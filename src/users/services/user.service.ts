@@ -8,7 +8,7 @@ import { PasswordService } from '../../auth/services/password.service';
 import { AuthService } from '../../auth/services/auth.service';
 import { PrismaService } from '../../database/prisma.service';
 import { UserModel } from '../models/user.model';
-import { MAX_PAGE_SIZE } from '../constants';
+import { DEFAULT_NUMBER_OF_DAYS, MAX_PAGE_SIZE } from '../constants';
 
 @Injectable()
 export class UserService {
@@ -32,24 +32,8 @@ export class UserService {
         disabled: false,
       });
       // And make a copy in our database as well
-      const tokensValidAfterTime = userRecord.tokensValidAfterTime;
-      const lastSignInTime = userRecord.metadata.lastSignInTime;
-      const lastRefreshTime = userRecord.metadata.lastRefreshTime;
-      return await this.upsertUserCopy({
-        ...userRecord,
-        tokensValidAfterTime: tokensValidAfterTime
-          ? new Date(tokensValidAfterTime)
-          : null,
-        metadata: {
-          creationTime: new Date(userRecord.metadata.creationTime),
-          lastSignInTime: lastSignInTime
-            ? new Date(lastSignInTime)
-            : lastSignInTime,
-          lastRefreshTime: lastRefreshTime
-            ? new Date(lastRefreshTime)
-            : lastRefreshTime,
-        },
-      } as UserModel);
+      const userModel = this.userRecordToUserModel(userRecord);
+      return await this.upsertUserCopy(userModel);
     } catch (e) {
       throw new BadRequestException(e);
     }
@@ -116,6 +100,9 @@ export class UserService {
   }
 
   async findUsers(pageSize = MAX_PAGE_SIZE, pageToken?: string) {
+    if (pageSize < 1) {
+      throw new BadRequestException();
+    }
     try {
       // Find the users from our database for a more granular control
       const userCopies = await this.prisma.userCopy.findMany({
@@ -153,7 +140,7 @@ export class UserService {
     try {
       return await this.prisma.userCopy.count();
     } catch (e) {
-      throw new BadRequestException(e);
+      throw new InternalServerErrorException(e);
     }
   }
 
@@ -167,7 +154,7 @@ export class UserService {
       const end = new Date();
       end.setHours(23, 59, 59, 999);
       // Anyone signed in between the start and end of today's date will be count as active
-      return await this.prisma.userCopy.count({
+      const activeUsers = await this.prisma.userCopy.count({
         where: {
           lastSignInTime: {
             gte: start,
@@ -175,8 +162,52 @@ export class UserService {
           },
         },
       });
+      // Store the result to the database
+      await this.upsertStatistic(start, activeUsers);
+      return activeUsers;
     } catch (e) {
-      throw new BadRequestException(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
+
+  async upsertStatistic(date: Date, activeUsers: number) {
+    try {
+      // Update the existing active user count or create a new record it goes to the next day
+      return this.prisma.statistic.upsert({
+        where: {
+          date: date,
+        },
+        create: { date: date, activeUsers: activeUsers },
+        update: { activeUsers: activeUsers },
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
+
+  async findAverageActiveUsers(days: number) {
+    // The number of days must be at least 2 days for calculating the average
+    if (days < 2) {
+      throw new BadRequestException();
+    }
+    try {
+      // Update the existing active user count or create a new record it goes to the next day
+      const take = days ?? DEFAULT_NUMBER_OF_DAYS;
+      const records = await this.prisma.statistic.findMany({
+        take: take,
+        orderBy: {
+          date: 'desc',
+        },
+      });
+      // Calculates the average number
+      let sum = 0;
+      for (const record of records) {
+        sum += record.activeUsers;
+      }
+      const nod = records.length; // Use the result length in case if the records are less than the desired number of days
+      return sum / nod;
+    } catch (e) {
+      throw new InternalServerErrorException(e);
     }
   }
 

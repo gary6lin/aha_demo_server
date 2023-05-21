@@ -25,3 +25,8 @@ model UserCopy {
   lastSignInTime  DateTime
   lastRefreshTime DateTime?
 }
+
+model Statistic {
+  date        DateTime @id
+  activeUsers Int      @default(0)
+}

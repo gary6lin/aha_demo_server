@@ -3,7 +3,6 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './users/user.module';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
-import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 
 @Module({
@@ -14,7 +13,6 @@ import { Module } from '@nestjs/common';
     FirebaseModule.forRoot({
       googleApplicationCredential: './firebase-credential.json',
     }),
-    CacheModule.register(),
     AuthModule,
     UserModule,
   ],

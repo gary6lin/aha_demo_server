@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Inject } from '@nestjs/common';
+import { Controller, Get, HttpStatus } from '@nestjs/common';
 import { Public } from './auth/decorators/public.decorator';
 import {
   ApiBearerAuth,
@@ -6,8 +6,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserService } from './users/services/user.service';
-import { CACHE_MANAGER, CacheStore } from '@nestjs/cache-manager';
 
 @ApiBearerAuth()
 @ApiResponse({
@@ -16,11 +14,6 @@ import { CACHE_MANAGER, CacheStore } from '@nestjs/cache-manager';
 })
 @Controller()
 export class AppController {
-  constructor(
-    private readonly usersService: UserService,
-    @Inject(CACHE_MANAGER) private cacheManager: CacheStore,
-  ) {}
-
   @Public()
   @ApiTags('Health Check')
   @ApiOperation({
@@ -33,16 +26,6 @@ export class AppController {
   })
   @Get('healthz')
   healthCheck(): void {
-    return;
-  }
-
-  @ApiTags('App')
-  @Get('statistics')
-  async statistics() {
-    // TODO
-    const totalUsers = await this.usersService.countUsers();
-    // let activeUsers = 0;
-    // let activeUsersd = 0;
     return;
   }
 }

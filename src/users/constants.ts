@@ -1,1 +1,9 @@
 export const MAX_PAGE_SIZE = 1000;
+
+export const STATISTICS_TTL = 10 * 60 * 1000;
+
+export const DEFAULT_NUMBER_OF_DAYS = 7;
+
+export const TOTAL_USERS_KEY = 'TOTAL_USERS';
+export const ACTIVE_USERS_KEY = 'ACTIVE_USERS';
+export const AVERAGE_ACTIVE_USERS_KEY = 'AVERAGE_ACTIVE_USERS';
