@@ -109,10 +109,11 @@ export class UserService {
       const userCopies = await this.prisma.userCopy.findMany({
         skip: pageToken ? 1 : 0, // Skip the cursor
         take: 20,
-        cursor: {
-          uid: pageToken ?? '',
-        },
-        where: {},
+        cursor: pageToken
+          ? {
+              uid: pageToken,
+            }
+          : undefined,
         orderBy: {
           creationTime: 'asc',
         },
@@ -138,7 +139,7 @@ export class UserService {
   async upsertUserCopy(data: UserModel) {
     try {
       // Update an existing user or create a new user if not exist
-      return this.prisma.userCopy.upsert({
+      return await this.prisma.userCopy.upsert({
         where: {
           uid: data.uid,
         },
