@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { UserService } from './services/user.service';
 import { UserController } from './user.controller';
-import { ProfileService } from './services/profile.service';
 import { DatabaseModule } from '../database/database.module';
 import { AuthModule } from '../auth/auth.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
-  imports: [DatabaseModule, AuthModule],
-  providers: [UserService, ProfileService],
+  imports: [CacheModule.register(), DatabaseModule, AuthModule],
+  providers: [UserService],
   controllers: [UserController],
   exports: [UserService],
 })

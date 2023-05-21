@@ -1,21 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserInput {
-  @ApiProperty({
-    required: false,
-    description: 'The display name of user',
-  })
-  readonly displayName: string;
+  @ApiProperty({ required: false })
+  readonly email?: string;
 
-  @ApiProperty({
-    required: false,
-    description: 'The password that is currently in use',
-  })
-  readonly currentPassword: string;
+  @ApiProperty({ required: true })
+  readonly emailVerified: boolean;
 
-  @ApiProperty({
-    required: false,
-    description: 'The new password to be updated',
-  })
-  readonly newPassword: string;
+  @ApiProperty({ required: false })
+  readonly displayName?: string;
+
+  @ApiProperty({ required: false })
+  readonly photoURL?: string;
+
+  @ApiProperty({ required: false })
+  readonly passwordHash?: string;
+
+  @ApiProperty({ required: false })
+  readonly passwordSalt?: string;
+
+  @ApiProperty({ required: false })
+  readonly tokensValidAfterTime?: Date;
+
+  @ApiProperty({ required: true })
+  readonly creationTime: Date;
+
+  @ApiProperty({ required: false })
+  readonly lastSignInTime?: Date;
+
+  @ApiProperty({ required: false })
+  readonly lastRefreshTime?: Date;
 }

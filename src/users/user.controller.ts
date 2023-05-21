@@ -3,8 +3,8 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Inject,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -19,12 +19,22 @@ import {
 } from '@nestjs/swagger';
 import { CreateUserInput } from './dto/input/create-user.input';
 import { UserService } from './services/user.service';
-import { ProfileService } from './services/profile.service';
-import { UpdateUserInput } from './dto/input/update-user.input';
 import { Public } from '../auth/decorators/public.decorator';
 import { AuthService } from '../auth/services/auth.service';
 import { PasswordFormatErrorDescription } from '../auth/errors/password-format.error';
-import { FetchUsersOutput } from './dto/output/fetch-users.output';
+import { FindUsersOutput } from './dto/output/find-users.output';
+import { StatisticOutput } from './dto/output/statistic.output';
+import {
+  ACTIVE_USERS_KEY,
+  AVERAGE_ACTIVE_USERS_KEY,
+  DEFAULT_NUMBER_OF_DAYS,
+  MAX_PAGE_SIZE,
+  STATISTICS_TTL,
+  TOTAL_USERS_KEY,
+} from './constants';
+import { CACHE_MANAGER, CacheStore } from '@nestjs/cache-manager';
+import { UpdateUserInfoInput } from './dto/input/update-user-info.input';
+import { UpdateUserPasswordInput } from './dto/input/update-user-password.input';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -37,7 +47,7 @@ export class UserController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UserService,
-    private readonly profileService: ProfileService,
+    @Inject(CACHE_MANAGER) private cacheManager: CacheStore,
   ) {}
 
   @Public()
@@ -54,16 +64,15 @@ export class UserController {
   })
   @Post('user')
   async createUser(@Body() input: CreateUserInput): Promise<void> {
-    const user = await this.usersService.createUser(
+    await this.usersService.createUser(
       input.displayName,
       input.email,
       input.password,
     );
-    await this.profileService.create(user.uid);
   }
 
   @ApiOperation({
-    summary: 'Updates an existing user.',
+    summary: 'Pull the user from Firebase Auth and updates in our database.',
   })
   @ApiParam({
     name: 'uid',
@@ -78,13 +87,55 @@ export class UserController {
     description: 'Invalid request body.',
   })
   @Patch('user/:uid')
-  async updateUser(
+  async updateUser(@Param('uid') uid: string): Promise<void> {
+    await this.usersService.pullUserAndUpdate(uid);
+  }
+
+  @ApiOperation({
+    summary: 'Updates the information of an existing user.',
+  })
+  @ApiParam({
+    name: 'uid',
+    description: 'The users id from Firebase Auth.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'The user has been updated successfully.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid request body.',
+  })
+  @Patch('user/:uid/info')
+  async updateUserInfo(
     @Param('uid') uid: string,
-    @Body() input: UpdateUserInput,
+    @Body() input: UpdateUserInfoInput,
   ): Promise<void> {
-    await this.usersService.updateUser(
+    await this.usersService.updateUserInfo(uid, input.displayName);
+  }
+
+  @ApiOperation({
+    summary: 'Updates the password of an existing user.',
+  })
+  @ApiParam({
+    name: 'uid',
+    description: 'The users id from Firebase Auth.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'The user has been updated successfully.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid request body.',
+  })
+  @Patch('user/:uid/password')
+  async updateUserPassword(
+    @Param('uid') uid: string,
+    @Body() input: UpdateUserPasswordInput,
+  ): Promise<void> {
+    await this.usersService.updateUserPassword(
       uid,
-      input.displayName,
       input.currentPassword,
       input.newPassword,
     );
@@ -92,13 +143,12 @@ export class UserController {
 
   @ApiOperation({
     summary:
-      'Retrieves all the users in batches with a size of maxResults starting from the offset as specified by pageToken.',
+      'Retrieves all the users in batches with a size of pageSize starting from the offset as specified by pageToken.',
   })
   @ApiQuery({
-    name: 'maxResults',
+    name: 'pageSize',
     required: false,
-    description:
-      'The page size, 1000 if undefined. This is also the maximum allowed limit.',
+    description: `Defaults to ${MAX_PAGE_SIZE} if undefined. This is also the maximum allowed limit.`,
   })
   @ApiQuery({
     name: 'pageToken',
@@ -108,17 +158,92 @@ export class UserController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'OK',
+    type: FindUsersOutput,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid request body.',
+    description: 'Invalid query value.',
   })
   @Get('users')
   async findUsers(
-    @Query('maxResults', ParseIntPipe) maxResults?: number,
+    @Query('pageSize') pageSize = MAX_PAGE_SIZE,
     @Query('pageToken') pageToken?: string,
-  ): Promise<FetchUsersOutput> {
-    return await this.usersService.findUsers(maxResults, pageToken);
+  ): Promise<FindUsersOutput> {
+    const users = await this.usersService.findUsers(pageSize, pageToken);
+    return {
+      users: users,
+      pageToken: users.length > 0 ? users[users.length - 1].uid : null, // Uid is used as pageToken
+    } as FindUsersOutput;
+  }
+
+  @ApiOperation({
+    summary:
+      'The statistic for the users, such as the total users and the daily active users.',
+  })
+  @ApiQuery({
+    name: 'numberOfDays',
+    required: false,
+    description: `The number of days for calculating the average active users. Defaults to ${DEFAULT_NUMBER_OF_DAYS} days.`,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: StatisticOutput,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid query value.',
+  })
+  @Get('users-statistic')
+  async findUsersStatistic(
+    @Query('numberOfDays') numberOfDays = DEFAULT_NUMBER_OF_DAYS,
+  ) {
+    // Read the total users from cache first
+    let totalUsers = await this.cacheManager.get<number>(TOTAL_USERS_KEY);
+    if (!totalUsers) {
+      // or get the value again from the database if the ttl expires
+      totalUsers = await this.usersService.countUsers();
+      // Set the result to cache for the next use
+      await this.cacheManager.set<number>(
+        TOTAL_USERS_KEY,
+        totalUsers,
+        STATISTICS_TTL,
+      );
+    }
+
+    // Read the daily active users from cache first
+    let activeUsers = await this.cacheManager.get<number>(ACTIVE_USERS_KEY);
+    if (!activeUsers) {
+      // or get the value again from the database if the ttl expires
+      activeUsers = await this.usersService.countActiveUsers();
+      // Set the result to cache for the next use
+      await this.cacheManager.set<number>(
+        ACTIVE_USERS_KEY,
+        activeUsers,
+        STATISTICS_TTL,
+      );
+    }
+
+    // Read the average active users from cache first
+    let averageActiveUsers = await this.cacheManager.get<number>(
+      AVERAGE_ACTIVE_USERS_KEY,
+    );
+    if (!averageActiveUsers) {
+      // or get the value again from the database if the ttl expires
+      averageActiveUsers = await this.usersService.findAverageActiveUsers(
+        numberOfDays,
+      );
+      // Set the result to cache for the next use
+      await this.cacheManager.set<number>(
+        AVERAGE_ACTIVE_USERS_KEY,
+        averageActiveUsers,
+        STATISTICS_TTL,
+      );
+    }
+
+    return {
+      totalUsers: totalUsers,
+      activeUsers: activeUsers,
+      averageActiveUsers: averageActiveUsers,
+    } as StatisticOutput;
   }
 }

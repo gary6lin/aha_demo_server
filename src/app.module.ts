@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
 import { FirebaseModule } from 'nestjs-firebase';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './users/user.module';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
+import { Module } from '@nestjs/common';
 
 @Module({
   imports: [
