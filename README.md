@@ -1,7 +1,3 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
-
 # Simple Login Server
 - This is the backend server for the [Simple Login Client](https://github.com/gary6lin/aha_demo_client).
 - Built with the [NestJS](https://github.com/nestjs/nest) framework.

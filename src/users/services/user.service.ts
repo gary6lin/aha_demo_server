@@ -32,8 +32,15 @@ export class UserService {
         password: password,
         disabled: false,
       });
-      // And make a copy in our database as well
-      const userModel = this.userRecordToUserModel(userRecord);
+      // Use our own hashing
+      const hashed = await this.passwordService.hashPassword(password);
+      // Model mapping
+      const userModel = this.userRecordToUserModel({
+        ...userRecord,
+        passwordHash: hashed.passwordHash,
+        passwordSalt: hashed.passwordSalt,
+      });
+      // And update the password in our database as well
       return await this.upsertUserCopy(userModel);
     } catch (e) {
       throw new InternalServerErrorException(e);
@@ -59,6 +66,9 @@ export class UserService {
   }
 
   async updateUserInfo(uid: string, displayName: string) {
+    // Check if the display name is valid
+    this.passwordService.checkDisplayName(displayName);
+
     try {
       // Update the user on Firebase Auth
       const userRecord = await this.firebase.auth.updateUser(uid, {
@@ -68,7 +78,7 @@ export class UserService {
       const userModel = this.userRecordToUserModel(userRecord);
       return await this.upsertUserCopy(userModel);
     } catch (e) {
-      throw new BadRequestException(e);
+      throw new InternalServerErrorException(e);
     }
   }
 
@@ -78,18 +88,11 @@ export class UserService {
     newPassword: string,
   ) {
     // Validate the current password
-    const user = await this.findUser(uid);
-
-    // The password hash and salt must exist
-    if (user.passwordHash && user.passwordSalt) {
-      throw new BadRequestException();
-    }
-
-    // Validate the current password
+    const userRecord = await this.findUser(uid);
     await this.passwordService.validatePassword(
       currentPassword,
-      user.passwordHash,
-      user.passwordSalt,
+      userRecord.passwordHash,
+      userRecord.passwordSalt,
     );
     // Check if the password meets all the requirements
     this.passwordService.checkPassword(newPassword);
@@ -99,11 +102,18 @@ export class UserService {
       const userRecord = await this.firebase.auth.updateUser(uid, {
         password: newPassword,
       });
+      // Use our own hashing
+      const hashed = await this.passwordService.hashPassword(newPassword);
+      // Model mapping
+      const userModel = this.userRecordToUserModel({
+        ...userRecord,
+        passwordHash: hashed.passwordHash,
+        passwordSalt: hashed.passwordSalt,
+      });
       // And update the password in our database as well
-      const userModel = this.userRecordToUserModel(userRecord);
       return await this.upsertUserCopy(userModel);
     } catch (e) {
-      throw new BadRequestException(e);
+      throw new InternalServerErrorException(e);
     }
   }
 
