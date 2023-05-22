@@ -35,6 +35,7 @@ import {
 import { CACHE_MANAGER, CacheStore } from '@nestjs/cache-manager';
 import { UpdateUserInfoInput } from './dto/input/update-user-info.input';
 import { UpdateUserPasswordInput } from './dto/input/update-user-password.input';
+import { InvalidPasswordErrorDescription } from '../auth/errors/invalid-password.error';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -127,7 +128,10 @@ export class UserController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid request body.',
+    description: [
+      InvalidPasswordErrorDescription,
+      PasswordFormatErrorDescription,
+    ].join('\n\n'),
   })
   @Patch('user/:uid/password')
   async updateUserPassword(

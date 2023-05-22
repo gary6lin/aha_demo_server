@@ -1,10 +1,23 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { hash } from 'bcrypt';
+import { genSalt, hash } from 'bcrypt';
 import { PasswordFormatError } from '../errors/password-format.error';
 import { InvalidPasswordError } from '../errors/invalid-password.error';
 
 @Injectable()
 export class PasswordService {
+  // Contains at least one lower character
+  lowerChar = /^(?=.*[a-z]).*$/;
+  // Contains at least one upper character
+  upperChar = /^(?=.*[A-Z]).*$/;
+  // Contains at least one digit character
+  numberChar = /^(?=.*\d).*$/;
+  // Contains at least one special character
+  specialChar = /^(?=.*[^a-zA-Z0-9\d\s]).*$/;
+  // Contains at least 8 characters
+  passwordLength = /^.{8,}$/;
+  // No whitespace is allowed
+  noWhitespace = /^\S*$/;
+
   async validatePassword(
     currentPassword: string,
     passwordHash: string,
@@ -20,42 +33,43 @@ export class PasswordService {
     }
   }
 
-  checkPassword(password: string) {
-    // Contains at least one lower character
-    const lowerChar = /^(?=.*[a-z]).*$/;
-    // Contains at least one upper character
-    const upperChar = /^(?=.*[A-Z]).*$/;
-    // Contains at least one digit character
-    const numberChar = /^(?=.*\d).*$/;
-    // Contains at least one special character
-    const specialChar = /^(?=.*[^a-zA-Z0-9\d\s]).*$/;
-    // Contains at least 8 characters
-    const passwordLength = /^.{8,}$/;
-    // No whitespace is allowed
-    const noWhitespace = /^\S*$/;
+  async hashPassword(password: string) {
+    const passwordSalt = await genSalt(10);
+    const passwordHash = await hash(password, passwordSalt);
+    return { passwordHash: passwordHash, passwordSalt: passwordSalt };
+  }
 
-    // RegExp combined all the above requirements
+  checkDisplayName(name: string) {
+    if (this.numberChar.test(name) || this.specialChar.test(name)) {
+      throw new BadRequestException(
+        'Numbers and special characters are not allowed.',
+      );
+    }
+  }
+
+  checkPassword(password: string) {
+    // RegExp combined all the requirements
     // const combined =
     //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\d\s])(?!.*\s).{8,}$/;
 
-    // Check if the password match the above requirements
+    // Check if the password matches all the requirements
     const errors = [];
-    if (!lowerChar.test(password)) {
+    if (!this.lowerChar.test(password)) {
       errors.push(PasswordFormatError.noLowerChar);
     }
-    if (!upperChar.test(password)) {
+    if (!this.upperChar.test(password)) {
       errors.push(PasswordFormatError.noUpperChar);
     }
-    if (!numberChar.test(password)) {
+    if (!this.numberChar.test(password)) {
       errors.push(PasswordFormatError.noNumberChar);
     }
-    if (!specialChar.test(password)) {
+    if (!this.specialChar.test(password)) {
       errors.push(PasswordFormatError.noSpecialChar);
     }
-    if (!passwordLength.test(password)) {
+    if (!this.passwordLength.test(password)) {
       errors.push(PasswordFormatError.insufficientLength);
     }
-    if (!noWhitespace.test(password)) {
+    if (!this.noWhitespace.test(password)) {
       errors.push(PasswordFormatError.hasWhitespace);
     }
 
