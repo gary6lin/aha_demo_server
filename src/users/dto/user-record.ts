@@ -17,6 +17,9 @@ export class UserRecord {
   readonly photoURL?: string;
 
   @ApiProperty()
+  readonly signInCount: number;
+
+  @ApiProperty()
   readonly tokensValidAfterTime: Date;
 
   @ApiProperty()

@@ -55,13 +55,7 @@ export class UserService {
       });
       return userCopy as UserModel;
     } catch (e) {
-      try {
-        // Then try the Firebase Auth if an unexpected error occurs
-        const userRecord = await this.firebase.auth.getUser(uid);
-        return this.userRecordToUserModel(userRecord);
-      } catch (e) {
-        throw new InternalServerErrorException(e);
-      }
+      throw new InternalServerErrorException(e);
     }
   }
 
@@ -145,9 +139,19 @@ export class UserService {
     try {
       // Get the user from Firebase Auth
       const userRecord = await this.firebase.auth.getUser(uid);
-      // And update the password in our database as well
-      const userModel = this.userRecordToUserModel(userRecord);
-      return await this.upsertUserCopy(userModel);
+      const newUserModel = this.userRecordToUserModel(userRecord);
+      const currentUser = await this.findUser(uid);
+      // Update the sign in count if the lastSignInTime is different
+      if (
+        newUserModel.lastSignInTime.getTime() ===
+        currentUser.lastSignInTime.getTime()
+      ) {
+        return await this.upsertUserCopy(newUserModel);
+      }
+      return await this.upsertUserCopy({
+        ...newUserModel,
+        signInCount: currentUser.signInCount + 1,
+      });
     } catch (e) {
       throw new InternalServerErrorException(e);
     }

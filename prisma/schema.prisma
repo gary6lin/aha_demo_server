@@ -19,6 +19,7 @@ model UserCopy {
   photoURL             String?
   passwordHash         String?
   passwordSalt         String?
+  signInCount          Int       @default(0)
   tokensValidAfterTime DateTime?
 
   creationTime    DateTime

@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -170,9 +171,14 @@ export class UserController {
   })
   @Get('users')
   async findUsers(
+    @Req() request: Request,
     @Query('pageSize') pageSize = MAX_PAGE_SIZE,
     @Query('pageToken') pageToken?: string,
   ): Promise<FindUsersOutput> {
+    // Update the current user
+    await this.usersService.pullUserAndUpdate(request['user']['uid']);
+
+    // Find the user list
     const users = await this.usersService.findUsers(pageSize, pageToken);
     return {
       users: users,
