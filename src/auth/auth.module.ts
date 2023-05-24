@@ -8,8 +8,9 @@ import { PasswordService } from './services/password.service';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: AuthGuard,
+      useExisting: AuthGuard,
     },
+    AuthGuard,
     AuthService,
     PasswordService,
   ],

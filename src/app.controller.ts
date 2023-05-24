@@ -25,7 +25,7 @@ export class AppController {
     description: 'I am alive!',
   })
   @Get('healthz')
-  healthCheck(): void {
-    return;
+  healthCheck() {
+    return 'I am alive!';
   }
 }
